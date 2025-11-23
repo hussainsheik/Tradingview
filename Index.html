@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Record Journal</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; }
+        
+        /* Custom scrollbar for text area */
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f1f1f1; }
+        textarea::-webkit-scrollbar-thumb { background: #111827; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+        /* Smooth fade in for table rows */
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Star Rating Hover Effects */
+        .star-btn:hover svg { transform: scale(1.2); }
+        .star-btn svg { transition: transform 0.1s; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen py-8 px-4 sm:px-6">
+
+    <div class="max-w-4xl mx-auto">
+        
+        <!-- === AUTH STATUS === -->
+        <div id="auth-loading" class="text-center py-4 text-gray-500 font-bold">
+            Connecting to secure database...
+        </div>
+
+        <!-- === FORM SECTION === -->
+        <div id="app-content" class="hidden bg-white p-6 shadow-xl border-t-8 border-gray-900 mb-8">
+            
+            <!-- Header -->
+            <div class="bg-gray-900 text-white py-4 px-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-4 h-4 rounded-full bg-white hidden md:block"></div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] uppercase">Trade Record</h1>
+                </div>
+                <button onclick="shareApp()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded flex items-center gap-2 transition-colors uppercase tracking-wider">
+                    <i data-lucide="share-2" class="w-4 h-4"></i> Share
+                </button>
+            </div>
+
+            <form id="tradeForm" class="space-y-6">
+                
+                <!-- Date & Symbol -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-2 border-gray-900 p-4">
+                    <div class="flex flex-col space-y-1 w-full">
+                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Date:</label>
+                        <input type="date" id="date" required class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                    </div>
+                    <div class="flex flex-col space-y-1 w-full">
+                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Symbol:</label>
+                        <input type="text" id="symbol" placeholder="e.g. EURUSD" required class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Trading Setup -->
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="w-full border-2 border-gray-900 bg-white py-1 px-2 mt-4 mb-2">
+                            <h3 class="font-bold text-center text-sm uppercase tracking-widest text-gray-900">Trading Setup</h3>
+                        </div>
+                        <div class="border-2 border-gray-900 p-3 space-y-3">
+                            <!-- Position -->
+                            <div class="flex flex-col space-y-1 w-full">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Position:</label>
+                                <input type="text" id="position" class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                            </div>
+                            <!-- Time -->
+                            <div class="flex flex-col space-y-1 w-full">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Time:</label>
+                                <input type="time" id="time" class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                            </div>
+                            <!-- Lot Size -->
+                            <div class="flex flex-col space-y-1 w-full">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Lot Size:</label>
+                                <input type="text" id="lotSize" class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                            </div>
+                            
+                            <!-- Long/Short Toggle -->
+                            <div class="flex flex-col space-y-1">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Long/Short</label>
+                                <div class="flex w-full border-2 border-gray-900">
+                                    <button type="button" id="btnLong" onclick="setLongShort('Long')" class="flex-1 py-1 text-xs font-bold uppercase bg-green-100 text-green-800 transition-colors">Long</button>
+                                    <div class="w-0.5 bg-gray-900"></div>
+                                    <button type="button" id="btnShort" onclick="setLongShort('Short')" class="flex-1 py-1 text-xs font-bold uppercase bg-white text-gray-400 transition-colors">Short</button>
+                                </div>
+                                <input type="hidden" id="longShort" value="Long">
+                            </div>
+
+                            <!-- Type -->
+                            <div class="flex flex-col space-y-1 w-full">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Type:</label>
+                                <input type="text" id="type" placeholder="Market/Limit" class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                            </div>
+                            <!-- Strategy -->
+                            <div class="flex flex-col space-y-1 w-full">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 ml-1">Strategy:</label>
+                                <input type="text" id="strategy" class="border-2 border-gray-900 px-2 py-1.5 font-mono text-sm focus:outline-none focus:bg-yellow-50 w-full">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Analysis -->
+                    <div class="lg:col-span-2 flex flex-col">
+                        <div class="w-full border-2 border-gray-900 bg-white py-1 px-2 mt-4 mb-2">
+                            <h3 class="font-bold text-center text-sm uppercase tracking-widest text-gray-900">Chart Analysis</h3>
+                        </div>
+                        <div class="flex-grow border-2 border-gray-900 p-2 min-h-[300px]">
+                            <textarea id="chartAnalysis" class="w-full h-full resize-none p-2 font-mono text-sm focus:outline-none focus:bg-yellow-50" placeholder="Describe market structure, indicators, or paste an image URL here..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade Management -->
+                <div>
+                    <div class="w-full border-2 border-gray-900 bg-white py-1 px-2 mt-4 mb-2">
+                        <h3 class="font-bold text-center text-sm uppercase tracking-widest text-gray-900">Trade Management</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 border-2 border-gray-900 p-4">
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Entry:</label><input type="text" id="entry" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Stop Loss:</label><input type="text" id="stopLoss" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Exit:</label><input type="text" id="exit" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Take Profit:</label><input type="text" id="takeProfit" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">R/R:</label><input type="text" id="rr" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Profit/Loss:</label><input type="text" id="profitLoss" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                    </div>
+                </div>
+
+                <!-- Trade Analysis -->
+                <div>
+                    <div class="w-full border-2 border-gray-900 bg-white py-1 px-2 mt-4 mb-2">
+                        <h3 class="font-bold text-center text-sm uppercase tracking-widest text-gray-900">Trade Analysis</h3>
+                    </div>
+                    <div class="border-2 border-gray-900 p-4 space-y-3">
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Reason for Trade:</label><input type="text" id="reason" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                        <div class="flex flex-col space-y-1"><label class="text-xs font-bold uppercase">Assumptions Before Trade:</label><input type="text" id="assumptions" class="border-2 border-gray-900 px-2 py-1 w-full"></div>
+                    </div>
+                </div>
+
+                <!-- Feedback -->
+                <div>
+                    <div class="w-full border-2 border-gray-900 bg-white py-1 px-2 mt-4 mb-2">
+                        <h3 class="font-bold text-center text-sm uppercase tracking-widest text-gray-900">Feedback</h3>
+                    </div>
+                    <div class="border-2 border-gray-900 p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- Disciplined Toggle -->
+                            <div class="flex items-center justify-between border-2 border-gray-900 px-3 py-2 w-full">
+                                <span class="text-xs font-bold uppercase">Disciplined</span>
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="toggleBtn('disciplined', 'Y')" id="disc_Y" class="w-8 h-8 font-bold border-2 text-gray-400 border-gray-200">Y</button>
+                                    <button type="button" onclick="toggleBtn('disciplined', 'N')" id="disc_N" class="w-8 h-8 font-bold border-2 text-gray-400 border-gray-200">N</button>
+                                </div>
+                                <input type="hidden" id="disciplined">
+                            </div>
+                            
+                            <!-- Followed Rules Toggle -->
+                            <div class="flex items-center justify-between border-2 border-gray-900 px-3 py-2 w-full">
+                                <span class="text-xs font-bold uppercase">Followed Rules</span>
+                                <div class="flex space-x-2">
+                                    <button type="button" onclick="toggleBtn('rules', 'Y')" id="rules_Y" class="w-8 h-8 font-bold border-2 text-gray-400 border-gray-200">Y</button>
+                                    <button type="button" onclick="toggleBtn('rules', 'N')" id="rules_N" class="w-8 h-8 font-bold border-2 text-gray-400 border-gray-200">N</button>
+                                </div>
+                                <input type="hidden" id="followedRules">
+                            </div>
+                        </div>
+
+                        <!-- Rating -->
+                        <div class="flex items-center justify-between border-t-2 border-gray-200 pt-4">
+                            <span class="font-bold uppercase tracking-widest text-sm ml-1">Rating</span>
+                            <div class="flex space-x-1" id="star-container">
+                                <!-- Stars injected by JS -->
+                            </div>
+                            <input type="hidden" id="rating" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" id="saveBtn" class="w-full bg-gray-900 text-white py-4 font-bold text-lg uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-5 h-5"></i> Save Trade Record
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- === TABLE SECTION === -->
+        <div id="table-container" class="hidden bg-white shadow-xl overflow-hidden border-2 border-gray-900">
+            <div class="bg-gray-100 px-6 py-4 border-b-2 border-gray-900 flex justify-between items-center">
+                <h2 class="text-xl font-bold uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="activity" class="text-gray-900"></i> Trade Log
+                </h2>
+                <div class="flex items-center gap-3">
+                    <button onclick="downloadCSV()" class="text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded flex items-center gap-2 transition-colors uppercase font-bold">
+                        <i data-lucide="download" class="w-4 h-4"></i> CSV
+                    </button>
+                    <span id="recordCount" class="text-sm bg-gray-900 text-white px-3 py-1 rounded-full">0 Records</span>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date/Symbol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Entry/Exit</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P/L</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tradeTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- === JAVASCRIPT === -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global State
+        let db, auth, user;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let tradesData = [];
+
+        // 1. Initialize Firebase
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            initAuth();
+        } catch (e) {
+            console.error("Firebase init error:", e);
+            document.getElementById('auth-loading').innerText = "Error loading database configuration.";
+        }
+
+        // 2. Auth Logic
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed:", error);
+            }
+        }
+
+        onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                user = currentUser;
+                document.getElementById('auth-loading').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                document.getElementById('table-container').classList.remove('hidden');
+                lucide.createIcons(); // Re-init icons
+                
+                // Initialize Listeners
+                setupRealtimeListener();
+                
+                // Set default date
+                document.getElementById('date').valueAsDate = new Date();
+            }
+        });
+
+        // 3. Firestore Listener (Real-time updates)
+        function setupRealtimeListener() {
+            if (!user) return;
+            const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'tradeRecords'));
+
+            onSnapshot(q, (snapshot) => {
+                const trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Client side sort (Newest first)
+                trades.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                tradesData = trades;
+
+                renderTable(trades);
+            }, (error) => {
+                console.error("Error fetching data:", error);
+            });
+        }
+
+        // 4. Render Table
+        function renderTable(trades) {
+            const tbody = document.getElementById('tradeTableBody');
+            document.getElementById('recordCount').innerText = `${trades.length} Records`;
+            tbody.innerHTML = '';
+
+            if (trades.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 italic">No trades yet.</td></tr>`;
+                return;
+            }
+
+            trades.forEach(trade => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-yellow-50 transition-colors fade-in";
+                
+                const isProfit = trade.profitLoss && !trade.profitLoss.includes('-');
+                const profitClass = isProfit ? 'text-green-600' : 'text-red-600';
+                
+                const typeBadgeClass = trade.longShort === 'Long' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-gray-900">${trade.symbol}</div>
+                        <div class="text-xs text-gray-500">${trade.date}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeBadgeClass}">
+                            ${trade.longShort}
+                        </span>
+                        <div class="text-xs text-gray-500 mt-1">${trade.type || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>In: ${trade.entry || '-'}</div>
+                        <div>Out: ${trade.exit || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold ${profitClass}">${trade.profitLoss || '-'}</div>
+                        <div class="text-xs text-gray-500">R: ${trade.rr || '-'}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-yellow-400">
+                        ${'★'.repeat(trade.rating || 0)}${'☆'.repeat(5 - (trade.rating || 0))}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="delete-btn text-gray-400 hover:text-red-600 transition-colors" data-id="${trade.id}">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+            
+            // Attach delete handlers
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    handleDelete(id);
+                });
+            });
+        }
+
+        // 5. Form Submission
+        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!user) return;
+
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Saving...';
+            btn.disabled = true;
+
+            const formData = {
+                date: document.getElementById('date').value,
+                symbol: document.getElementById('symbol').value,
+                position: document.getElementById('position').value,
+                time: document.getElementById('time').value,
+                lotSize: document.getElementById('lotSize').value,
+                longShort: document.getElementById('longShort').value,
+                type: document.getElementById('type').value,
+                strategy: document.getElementById('strategy').value,
+                chartAnalysis: document.getElementById('chartAnalysis').value,
+                entry: document.getElementById('entry').value,
+                stopLoss: document.getElementById('stopLoss').value,
+                exit: document.getElementById('exit').value,
+                takeProfit: document.getElementById('takeProfit').value,
+                rr: document.getElementById('rr').value,
+                profitLoss: document.getElementById('profitLoss').value,
+                reason: document.getElementById('reason').value,
+                assumptions: document.getElementById('assumptions').value,
+                disciplined: document.getElementById('disciplined').value,
+                followedRules: document.getElementById('followedRules').value,
+                rating: parseInt(document.getElementById('rating').value) || 0,
+                createdAt: serverTimestamp()
+            };
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'tradeRecords'), formData);
+                
+                // Reset form
+                e.target.reset();
+                resetUIState();
+            } catch (error) {
+                console.error("Error adding doc:", error);
+                alert("Failed to save. Check console.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+
+        // 6. Delete Action
+        async function handleDelete(id) {
+            if(confirm('Delete this trade record?')) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'tradeRecords', id));
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        // Expose helper for CSV download to window
+        window.downloadCSV = () => {
+            if (!tradesData.length) return alert("No data to export");
+            const headers = ["Date", "Symbol", "Type", "Long/Short", "Entry", "Exit", "P/L", "Rating"];
+            const csvContent = [
+                headers.join(","),
+                ...tradesData.map(t => [t.date, t.symbol, t.type, t.longShort, t.entry, t.exit, t.profitLoss, t.rating].join(","))
+            ].join("\n");
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "trade_journal.csv";
+            link.click();
+        };
+
+        // UI Reset Helper
+        function resetUIState() {
+            setLongShort('Long');
+            toggleBtn('disciplined', null); // Reset to neither
+            toggleBtn('rules', null);
+            renderStars(0);
+            document.getElementById('date').valueAsDate = new Date();
+        }
+
+        // Initialize Icons on Load
+        lucide.createIcons();
+    </script>
+
+    <!-- === UI LOGIC (Non-Module) === -->
+    <script>
+        // Star Rating Logic
+        function initStars() {
+            const container = document.getElementById('star-container');
+            container.innerHTML = '';
+            for(let i=1; i<=5; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'star-btn focus:outline-none';
+                btn.onclick = () => renderStars(i);
+                btn.innerHTML = `<i data-lucide="star" class="w-6 h-6 text-gray-300"></i>`;
+                container.appendChild(btn);
+            }
+            lucide.createIcons();
+        }
+
+        function renderStars(rating) {
+            document.getElementById('rating').value = rating;
+            const btns = document.querySelectorAll('.star-btn svg');
+            btns.forEach((svg, idx) => {
+                if (idx < rating) {
+                    svg.classList.add('text-yellow-400', 'fill-yellow-400');
+                    svg.classList.remove('text-gray-300');
+                } else {
+                    svg.classList.remove('text-yellow-400', 'fill-yellow-400');
+                    svg.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        // Toggle Buttons (Long/Short)
+        function setLongShort(val) {
+            document.getElementById('longShort').value = val;
+            const btnL = document.getElementById('btnLong');
+            const btnS = document.getElementById('btnShort');
+            
+            if(val === 'Long') {
+                btnL.className = "flex-1 py-1 text-xs font-bold uppercase bg-green-100 text-green-800 transition-colors border-r-2 border-gray-900";
+                btnS.className = "flex-1 py-1 text-xs font-bold uppercase bg-white text-gray-400 transition-colors";
+            } else {
+                btnL.className = "flex-1 py-1 text-xs font-bold uppercase bg-white text-gray-400 transition-colors border-r-2 border-gray-900";
+                btnS.className = "flex-1 py-1 text-xs font-bold uppercase bg-red-100 text-red-800 transition-colors";
+            }
+        }
+
+        // Toggle Buttons (Yes/No)
+        function toggleBtn(group, val) {
+            const input = group === 'disciplined' ? document.getElementById('disciplined') : document.getElementById('followedRules');
+            const btnY = document.getElementById(group === 'disciplined' ? 'disc_Y' : 'rules_Y');
+            const btnN = document.getElementById(group === 'disciplined' ? 'disc_N' : 'rules_N');
+
+            input.value = val || '';
+            
+            // Reset both first
+            btnY.className = "w-8 h-8 font-bold border-2 text-gray-400 border-gray-200 transition-colors";
+            btnN.className = "w-8 h-8 font-bold border-2 text-gray-400 border-gray-200 transition-colors";
+
+            if (val === 'Y') {
+                btnY.className = "w-8 h-8 font-bold border-2 bg-gray-900 text-white border-gray-900 transition-colors";
+            } else if (val === 'N') {
+                btnN.className = "w-8 h-8 font-bold border-2 bg-gray-900 text-white border-gray-900 transition-colors";
+            }
+        }
+
+        // Share Function
+        function shareApp() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert("Link copied to clipboard!");
+            });
+        }
+
+        // Init UI
+        window.addEventListener('DOMContentLoaded', () => {
+            initStars();
+            document.getElementById('date').valueAsDate = new Date();
+        });
+    </script>
+</body>
+</html>
+
